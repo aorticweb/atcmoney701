@@ -1,4 +1,4 @@
-name: Python package
+name: Run Provider Smoke Tests
 
 on:
   pull_request:
@@ -6,8 +6,6 @@ on:
 jobs:
 
   pytest:
-    if: needs.is_changed.outputs.changed == 'true'
-    needs: is_changed
     concurrency:
       group: '${{ github.ref }}_pytest_providers'
       cancel-in-progress: true
