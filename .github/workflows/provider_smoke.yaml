@@ -20,6 +20,6 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
-      - name: run_provider tests
-        run: make install_pauly
+      - name: 'Provider smoke tests'
+        run: make build_and_run_provider_tests
 
