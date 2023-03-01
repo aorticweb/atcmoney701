@@ -3,3 +3,30 @@ line-length = 120
 
 [tool.isort]
 profile = "black"
+
+[tool.poetry]
+name = "atcmoney701"
+version = "0.1.0"
+description = ""
+authors = ["aorticweb <aorticweb@aorticweb.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "2.25.1"
+python-dotenv = "1.0.0"
+
+
+[tool.poetry.group.dev.dependencies]
+isort = "5.9.3"
+black = "22.3.0"
+flake8 = "3.9.2"
+pytest = "6.2.5"
+
+
+[tool.poetry.group.local-only.dependencies]
+pre-commit = "^3.1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
