@@ -8,6 +8,6 @@ build_python_test:
 provider_tests:
 	# TODO:
 	# add testing coverage
-	docker run --rm -it atcmoney_test pytest ./providers/smoke_tests
+	docker run --rm atcmoney_test pytest ./providers/smoke_tests
 
 build_and_run_provider_tests: build_python_test provider_tests
