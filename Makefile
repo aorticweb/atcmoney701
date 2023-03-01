@@ -2,6 +2,11 @@ format:
 	isort .
 	black .
 
+lint:
+	flake8
+	black . --check
+	isort . --check-only
+
 build_python_test:
 	docker build . -t atcmoney_test -f dockerfiles/python_test.dockerfile
 
