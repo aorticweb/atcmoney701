@@ -1,0 +1,26 @@
+name: Python package
+
+on: [push]
+
+jobs:
+
+  pytest:
+    if: needs.is_changed.outputs.changed == 'true'
+    needs: is_changed
+    concurrency:
+      group: '${{ github.ref }}_pytest_providers'
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: 'Create env file'
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: run_provider tests
+        run: make install_pauly
+
