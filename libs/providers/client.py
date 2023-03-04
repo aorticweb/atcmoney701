@@ -1,4 +1,4 @@
-from providers.common.quote import Quote
+from libs.providers.common.quote import Quote
 
 
 class Client:
