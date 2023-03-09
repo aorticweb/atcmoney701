@@ -5,9 +5,9 @@ from typing import Dict
 import requests
 from requests import Response
 
+from libs.common.currency import Currency
+from libs.common.quote import Quote
 from libs.providers.client import Client as BaseClient
-from libs.providers.common.currency import Currency
-from libs.providers.common.quote import Quote
 from libs.providers.exception import ConfigException, ProviderAPIError
 
 logger = getLogger(__name__)

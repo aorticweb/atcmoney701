@@ -1,8 +1,8 @@
 import pytest
 from providers import ClientFactory, ClientType
 
-from libs.providers.common.currency import Currency
-from libs.providers.common.quote import Quote
+from libs.common.currency import Currency
+from libs.common.quote import Quote
 from libs.providers.exception import ProviderAPIError
 
 client_generator = ClientFactory[ClientType.VANTAGE]
