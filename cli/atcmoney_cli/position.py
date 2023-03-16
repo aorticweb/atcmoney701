@@ -4,14 +4,13 @@ from typing import Dict, List, Optional
 
 import click
 import inquirer
-from atcmoney_cli.config import position_store_file
+from atcmoney_cli.config import get_provider, position_store_file
 from atcmoney_cli.logging import logger
 
 from libs.common.currency import Currency
 from libs.common.position import Position
 from libs.common.quote import Quote
 from libs.common.trade import Side, Trade
-from libs.providers import ClientFactory, ClientType
 from libs.providers.exception import ProviderAPIError
 
 
@@ -114,10 +113,8 @@ def details(symbol: Optional[str] = None):
     if symbol not in positions_map.keys():
         logger.warning(f"No position found for {symbol=}")
 
-    provider_client = ClientFactory[ClientType.VANTAGE]()
-
     try:
-        quote = provider_client.get_quote(symbol)
+        quote = get_provider().get_quote(symbol)
     except ProviderAPIError as ex:
         logger.warning(ex.message)
         print_dict(_position_print_data(positions_map[symbol]))
@@ -164,7 +161,7 @@ def _register_trade(side: Side):
     input_data = inquirer.prompt(questions)
     if input_data is None:
         return
-    provider_client = ClientFactory[ClientType.VANTAGE]()
+
     if side == Side.SELL:
         input_data["quantity"] = (-1) * float(input_data["quantity"])
 
@@ -178,7 +175,7 @@ def _register_trade(side: Side):
 
     if position is None:
         try:
-            provider_client.get_quote(input_data["symbol"])
+            get_provider().get_quote(input_data["symbol"])
         except ProviderAPIError as ex:
             logger.warning(ex.message)
             click.echo("Market Provider failed to find quote, aborting trade")
