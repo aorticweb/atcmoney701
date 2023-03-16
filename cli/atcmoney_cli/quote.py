@@ -1,9 +1,9 @@
 from typing import List
 
 import click
+from atcmoney_cli.config import get_provider
 from atcmoney_cli.logging import logger
 
-from libs.providers import ClientFactory, ClientType
 from libs.providers.client import Client
 from libs.providers.exception import ProviderAPIError
 
@@ -27,7 +27,5 @@ def quote(symbols: List[str]):
             + f"at a time, will skip symbols after {symbols[MAX_QUOTE_CALL]}"
         )
 
-    provider_client = ClientFactory[ClientType.VANTAGE]()
-
     for symbol in symbols[:MAX_QUOTE_CALL]:
-        print_quote(symbol, provider_client)
+        print_quote(symbol, get_provider())

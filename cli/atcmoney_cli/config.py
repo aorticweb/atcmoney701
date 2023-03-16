@@ -5,17 +5,13 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
+from libs.providers import ClientFactory, ClientType
+from libs.providers.client import Client
+
 logger = getLogger("ATCMONEY")
 ATCMONEY_CONFIG_DIR_KEY = "ATCMONEY_CONFIG_DIR"
+ATCMONEY_PROVIDER = "ATCMONEY_PROVIDER"
 DEFAULT_CONFIG_DIR = os.path.join(os.environ.get("HOME"), ".atcmoney")
-
-
-# def create_config_dir(config_dir: Optional[PathLike] = None):
-#     if config_dir is None:
-#         config_dir = DEFAULT_CONFIG_DIR
-
-#     if not os.path.exists(config_dir):
-#         os.makedirs(config_dir)
 
 
 def load_env(config_dir: Optional[PathLike] = None):
@@ -28,6 +24,10 @@ def load_env(config_dir: Optional[PathLike] = None):
         open(env_path, "x")
     load_dotenv(env_path)
     os.environ[ATCMONEY_CONFIG_DIR_KEY] = config_dir
+
+
+def get_provider() -> Client:
+    return ClientFactory[os.environ.get(ATCMONEY_PROVIDER, ClientType.MOCK)]()
 
 
 def position_store_file():
