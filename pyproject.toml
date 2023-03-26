@@ -16,6 +16,7 @@ pydantic = "^1.10.5"
 pytest = "7.2.1"
 python-dotenv = "1.0.0"
 black = "^23.1.0"
+pydantic-factories = "^1.17.2"
 
 
 [build-system]

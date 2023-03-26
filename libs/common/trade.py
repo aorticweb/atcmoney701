@@ -1,7 +1,6 @@
 from enum import Enum
-from typing import Dict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, confloat
 
 from libs.common.currency import Currency
 
@@ -12,17 +11,44 @@ class Side(str, Enum):
 
 
 class Trade(BaseModel):
+    """Data model for trade.
+
+    This is the core (minimum) information required for a trade.
+    This is purposefuly kept simple to accomodate multiple types of
+    assets. Symbol could be replaced with identifier.
+
+    Args:
+        symbol: the asset symbol i.e GOOGL
+        side: buy/sell enum
+        currency: unit price currency
+        quantity: the quantity of the asset involved in the trade i.e 1.5 stocks
+        unit_price: trade asset unit price i.e for one unit of quantity
+    """
+
     symbol: str
     side: Side
     currency: Currency
     quantity: float
-    unit_price: float
-
-    @classmethod
-    def from_total_cost(cls, data: Dict, total_cost: float) -> "Trade":
-        data["unit_price"] = total_cost / data["quantity"]
-        return cls(**data)
+    unit_price: confloat(ge=0)
 
     @property
     def total_cost(self) -> float:
+        """Return nominal cost of the trade.
+
+        Returns:
+            the cost of the trade
+        """
         return self.unit_price * self.quantity
+
+
+class PnL(BaseModel):
+    """Profit and Loss of a Trade
+
+    Args:
+        absolute_gains: nominal gains from trade(s)
+        relative_gains: relative (%) gains from trade(s)
+        unit_price: asset unit_price
+    """
+
+    absolute_gains: float
+    relative_gains: float
