@@ -7,7 +7,7 @@ jobs:
 
   pytest:
     concurrency:
-      group: '${{ github.ref }}_pytest_providers'
+      group: '${{ github.ref }}_common_tests'
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
