@@ -16,6 +16,7 @@ from atcmoney_cli.quote import quote
     help="Path to .atcmoney file, default is $HOME",
 )
 def cli(config_folder_path: Optional[PathLike] = None):
+    """Main cli command with config flag."""
     load_env(config_folder_path)
 
 

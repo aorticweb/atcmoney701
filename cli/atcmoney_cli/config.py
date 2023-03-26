@@ -15,6 +15,12 @@ DEFAULT_CONFIG_DIR = os.path.join(os.environ.get("HOME"), ".atcmoney")
 
 
 def load_env(config_dir: Optional[PathLike] = None):
+    """Load environment from config file into os.environ.
+
+    Args:
+        config_dir: the path to atcmney config dir
+
+    """
     if config_dir is None:
         config_dir = DEFAULT_CONFIG_DIR
 
@@ -27,8 +33,18 @@ def load_env(config_dir: Optional[PathLike] = None):
 
 
 def get_provider() -> Client:
+    """Get data provider client.
+
+    Returns:
+        Provider client
+    """
     return ClientFactory[os.environ.get(ATCMONEY_PROVIDER, ClientType.MOCK)]()
 
 
-def position_store_file():
+def position_store_file() -> str:
+    """Get path to position store file.
+
+    Returns:
+        path to position store file
+    """
     return os.path.join(os.environ[ATCMONEY_CONFIG_DIR_KEY], ".positions.json")

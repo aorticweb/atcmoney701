@@ -127,6 +127,14 @@ def details(symbol: Optional[str] = None):
 
 
 def _register_trade(side: Side):
+    """Helpers function to perform trade.
+
+    Perform trade, print details and pnl and store position/updated position
+
+    Args:
+        side: whether the trade is a buy or a sell
+    """
+
     def isfloat(num):
         try:
             float(num)
@@ -204,12 +212,14 @@ def _register_trade(side: Side):
 
 @click.command(name="buy")
 def register_buy():
+    """Command for position buy trade."""
     click.echo("Begining trdae registration...")
     _register_trade(Side.BUY)
 
 
 @click.command(name="sell")
 def register_sell():
+    """Command for position sell trade."""
     _register_trade(Side.SELL)
 
 
