@@ -6,9 +6,10 @@ import click
 import inquirer
 from atcmoney_cli.config import get_provider, position_store_file
 from atcmoney_cli.logging import logger
+from click.exceptions import BadParameter
 
 from libs.common.currency import Currency
-from libs.common.position import Position
+from libs.common.position import Position, add_trade_to_position
 from libs.common.quote import Quote
 from libs.common.trade import Side, Trade
 from libs.providers.exception import ProviderAPIError
@@ -22,8 +23,10 @@ def dollar_precision(value: float) -> float:
 @click.pass_context
 def position(ctx):
     if ctx.invoked_subcommand is None:
+        click.echo("Fetching positions")
         for position in load_positions():
             print_dict(_position_print_data(position))
+        click.echo("Done Fetching positions")
 
 
 def print_dict(data: Dict):
@@ -43,13 +46,12 @@ def _position_print_data(position: Position) -> Dict:
 
 def _position_details_print_data(position: Position, quote: Quote) -> Dict:
     data = _position_print_data(position)
+    pnl = position.calculate_pnl(quote.price)
     if position.currency == quote.currency:
         data[
             "absolute gains"
-        ] = f"{dollar_precision(position.quantity * quote.price - position.cost)} {position.currency}"
-        data[
-            "relative gain"
-        ] = f"{round(100 * (position.quantity * quote.price - position.cost)/position.cost, 6) }%"
+        ] = f"{dollar_precision(pnl.absolute_gains)} {position.currency}"
+        data["relative gain"] = f"{round(100 * pnl.relative_gains, 6) }%"
 
     data["current price"] = f"{quote.price} {quote.currency}"
     data[
@@ -111,7 +113,8 @@ def details(symbol: Optional[str] = None):
         symbol = user_select_from_stocks([s for s in positions_map.keys()])
 
     if symbol not in positions_map.keys():
-        logger.warning(f"No position found for {symbol=}")
+        click.echo(f"No position found for {symbol=}")
+        return
 
     try:
         quote = get_provider().get_quote(symbol)
@@ -123,87 +126,100 @@ def details(symbol: Optional[str] = None):
     print_dict(_position_details_print_data(positions_map[symbol], quote))
 
 
-def isfloat(num):
-    try:
-        float(num)
-        return True
-    except ValueError:
-        return False
-
-
 def _register_trade(side: Side):
-    questions = [
-        inquirer.Text(
-            "symbol",
-            message="What is the instrument symbol?",
-        ),
-        inquirer.Text(
-            "quantity",
-            message=f"How many units are you {side.lower()}ing?",
-            validate=lambda _, x: isfloat(x) and float(x) > 0,
-        ),
-        inquirer.Text(
-            "unit_price",
-            message="What is the price?",
-            validate=lambda _, x: isfloat(x) and float(x) >= 0,
-        ),
-        inquirer.List(
-            "total_or_unit_price",
-            message="Is this the Total or Unit price?",
-            choices=["Total", "Unit"],
-        ),
-        inquirer.List(
-            "currency",
-            message="What is the currency?",
-            choices=[currency.name for currency in Currency],
-        ),
-    ]
-    input_data = inquirer.prompt(questions)
-    if input_data is None:
-        return
+    """Helpers function to perform trade.
+
+    Perform trade, print details and pnl and store position/updated position
+
+    Args:
+        side: whether the trade is a buy or a sell
+    """
+
+    def isfloat(num):
+        try:
+            float(num)
+            return True
+        except ValueError:
+            return False
+
+    def float_larger_than_zero(value):
+        if isfloat(value) and float(value) > 0:
+            return float(value)
+        raise BadParameter(message="Must be float greater than zero")
+
+    def float_larger_than_or_equal_zero(value):
+        if isfloat(value) and float(value) >= 0:
+            return float(value)
+        raise BadParameter(message="Must be float greater than or equal zero")
+
+    symbol = click.prompt("What is the instrument symbol?", type=str)
+    quantity = click.prompt(
+        f"How many units are you {side.lower()}ing?", value_proc=float_larger_than_zero
+    )
+    unit_price = click.prompt(
+        "What is the price?", value_proc=float_larger_than_or_equal_zero
+    )
+    total_or_unit_price = inquirer.list_input(
+        message="Is this the Total or Unit price?",
+        choices=["Total", "Unit"],
+    )
+    currency = inquirer.list_input(
+        message="What is the currency?",
+        choices=[currency.name for currency in Currency],
+    )
 
     if side == Side.SELL:
-        input_data["quantity"] = (-1) * float(input_data["quantity"])
+        quantity = (-1) * quantity
 
     positions_map = load_positions_map()
-    position = positions_map.get(input_data["symbol"])
+    position = positions_map.get(symbol)
 
-    if input_data["total_or_unit_price"] == "Total":
-        trade = Trade(**input_data, side=side)
-    else:
-        trade = Trade(**input_data, side=side)
+    if total_or_unit_price == "Total":
+        unit_price = unit_price / abs(quantity)
+
+    trade = Trade(
+        symbol=symbol,
+        side=side,
+        currency=currency,
+        quantity=quantity,
+        unit_price=unit_price,
+    )
 
     if position is None:
         try:
-            get_provider().get_quote(input_data["symbol"])
+            get_provider().get_quote(symbol)
         except ProviderAPIError as ex:
             logger.warning(ex.message)
             click.echo("Market Provider failed to find quote, aborting trade")
             return
-        position = Position(
-            quantity=trade.quantity,
-            cost=trade.total_cost,
-            symbol=trade.symbol,
-            currency=trade.currency,
-        )
-    else:
-        position.quantity += trade.quantity
-        position.cost += trade.total_cost
 
-    if position.quantity == 0:
-        del positions_map[input_data["symbol"]]
+    position, pnl = add_trade_to_position(trade, position)
+    if pnl is not None:
+        click.echo(
+            f"absolute gains: {pnl.absolute_gains} {trade.currency},"
+            + f" relative gains: {round(100 * pnl.relative_gains, 6) }%"
+        )
+
+    if position is None:
+        del positions_map[symbol]
+        click.echo("Position was liquidated")
     else:
-        positions_map[input_data["symbol"]] = position
+        positions_map[symbol] = position
+        click.echo(f"Position updated to {position.quantity} units")
+
     store_positions(list(positions_map.values()))
 
 
 @click.command(name="buy")
 def register_buy():
+    """Command for position buy trade."""
+    click.echo("Begining trdae registration...")
     _register_trade(Side.BUY)
 
 
 @click.command(name="sell")
 def register_sell():
+    """Command for position sell trade."""
     _register_trade(Side.SELL)
 
 
